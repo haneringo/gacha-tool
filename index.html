@@ -378,7 +378,11 @@
     margin-bottom: 8px;
   }
 
-  .empty-state {
+  .result-card.pending {
+    background: var(--surface);
+    border-color: #ffffff15;
+    opacity: 0.5;
+  }
     text-align: center;
     color: var(--muted);
     padding: 40px 20px;
@@ -567,6 +571,22 @@
   <div class="page" id="page-prizes">
 
     <div class="card">
+      <div class="card-title">📥 賞品CSV インポート／エクスポート</div>
+      <div style="font-size:0.82rem;color:var(--muted);margin-bottom:12px;">
+        フォーマット：<code style="background:#ffffff10;padding:2px 6px;border-radius:4px;">type,name</code>　typeは <code style="background:#ffffff10;padding:2px 6px;border-radius:4px;">big</code> / <code style="background:#ffffff10;padding:2px 6px;border-radius:4px;">hit</code> / <code style="background:#ffffff10;padding:2px 6px;border-radius:4px;">miss</code>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+          📂 CSVを読み込む
+          <input type="file" accept=".csv,text/csv" style="display:none" onchange="importPrizeCsv(event)">
+        </label>
+        <button class="btn btn-ghost btn-sm" onclick="exportPrizeCsv()">💾 CSVに書き出す</button>
+        <button class="btn btn-ghost btn-sm" onclick="downloadPrizeTemplate()">📄 テンプレDL</button>
+      </div>
+      <div id="prizeCsvMsg" style="margin-top:10px;font-size:0.82rem;"></div>
+    </div>
+
+    <div class="card">
       <div class="card-title">⭐ 大当たり</div>
       <div class="form-full">
         <label>新しい賞品を追加</label>
@@ -625,6 +645,22 @@
 
   <!-- ════════════════════════════════ USERS PAGE ════════════════════════════════ -->
   <div class="page" id="page-users">
+
+    <div class="card">
+      <div class="card-title">📥 ユーザーCSV インポート／エクスポート</div>
+      <div style="font-size:0.82rem;color:var(--muted);margin-bottom:12px;">
+        フォーマット：<code style="background:#ffffff10;padding:2px 6px;border-radius:4px;">name,batch,reduce</code>　reduceは削減コード（省略可）、複数は<code style="background:#ffffff10;padding:2px 6px;border-radius:4px;">|</code>区切り
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+          📂 CSVを読み込む
+          <input type="file" accept=".csv,text/csv" style="display:none" onchange="importUserCsv(event)">
+        </label>
+        <button class="btn btn-ghost btn-sm" onclick="exportUserCsv()">💾 CSVに書き出す</button>
+        <button class="btn btn-ghost btn-sm" onclick="downloadUserTemplate()">📄 テンプレDL</button>
+      </div>
+      <div id="userCsvMsg" style="margin-top:10px;font-size:0.82rem;"></div>
+    </div>
 
     <div class="card">
       <div class="card-title">➕ ユーザー追加</div>
@@ -887,20 +923,43 @@ async function startGacha(count) {
 
   const prizes = getAvailablePrizes(idx);
   state.results = [];
-  document.getElementById('resultsArea').style.display = 'none';
-  document.getElementById('resultsGrid').innerHTML = '';
 
-  const delay = count === 1 ? 2000 : 800;
+  // 先に全結果を抽選
+  for (let i = 0; i < count; i++) state.results.push(drawOne(prizes));
+
+  // 結果エリアを準備（空カードを並べる）
+  const area = document.getElementById('resultsArea');
+  const grid = document.getElementById('resultsGrid');
+  area.style.display = count > 1 ? 'block' : 'none';
+  grid.innerHTML = count > 1
+    ? state.results.map((_, i) =>
+        `<div class="result-card pending" id="rc-${i}">
+          <div class="rc-num">${i+1}回目</div>
+          <div class="rc-item" style="color:var(--muted)">？？？</div>
+        </div>`
+      ).join('')
+    : '';
 
   for (let i = 0; i < count; i++) {
-    const result = drawOne(prizes);
-    state.results.push(result);
-    await animateSpin(result, i, delay);
-    await sleep(count === 1 ? 300 : 100);
+    const result = state.results[i];
+    if (count === 1) {
+      await animateSpin(result, 1800);
+    } else {
+      // 10連：スピン短め、大当たりだけ少し長く止まる
+      const spinTime = result.type === 'big' ? 600 : result.type === 'hit' ? 450 : 320;
+      await animateSpin(result, spinTime);
+      revealCard(i, result);
+      const pauseAfter = result.type === 'big' ? 500 : result.type === 'hit' ? 250 : 80;
+      await sleep(pauseAfter);
+    }
   }
 
-  // Show all results
-  renderResults();
+  if (count === 1) {
+    area.style.display = 'block';
+    grid.innerHTML = '';
+    renderResults();
+  }
+
   saveSession(idx, state.results);
 
   state.isSpinning = false;
@@ -911,9 +970,24 @@ async function startGacha(count) {
   else if (state.results.some(r => r.type === 'hit')) spawnSparkles('#4ade80');
 }
 
+function revealCard(i, result) {
+  const card = document.getElementById(`rc-${i}`);
+  if (!card) return;
+  const label = result.type === 'big' ? '⭐ 大当たり！' : result.type === 'hit' ? '✨ 当たり' : '💔 ハズレ';
+  card.className = `result-card ${result.type}`;
+  card.style.animation = 'none';
+  card.innerHTML = `
+    <div class="rc-rank">${label}</div>
+    <div class="rc-item">${result.item}</div>
+    <div class="rc-num">${i+1}回目</div>`;
+  // re-trigger animation
+  void card.offsetWidth;
+  card.style.animation = 'popIn .35s cubic-bezier(.175,.885,.32,1.275) both';
+}
+
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-async function animateSpin(result, idx, spinDuration) {
+async function animateSpin(result, spinDuration) {
   const reel = document.getElementById('slotReel');
   const inner = document.getElementById('reelInner');
   const resultText = document.getElementById('slotResultText');
@@ -924,17 +998,18 @@ async function animateSpin(result, idx, spinDuration) {
   display.style.borderColor = 'var(--gold)';
   reel.classList.add('spinning');
 
-  // Spin animation: cycle through random items
-  const spinTime = spinDuration - 200;
-  const interval = setInterval(() => {
-    inner.innerHTML = reelItems.map(i => `<div>${i}</div>`).join('');
-  }, 80);
+  // 回転中：ランダム絵文字をテンポよく切り替え
+  const frameMs = 60;
+  const frames = Math.floor((spinDuration - 150) / frameMs);
+  for (let f = 0; f < frames; f++) {
+    const emoji = reelItems[Math.floor(Math.random() * reelItems.length)];
+    inner.innerHTML = `<div>${emoji}</div>`;
+    await sleep(frameMs);
+  }
 
-  await sleep(spinTime);
-  clearInterval(interval);
   reel.classList.remove('spinning');
 
-  // Show result
+  // 結果表示
   const emoji = result.type === 'big' ? '🏆' : result.type === 'hit' ? '✨' : '💔';
   inner.innerHTML = `<div>${emoji}</div>`;
   resultText.textContent = result.item;
@@ -944,7 +1019,7 @@ async function animateSpin(result, idx, spinDuration) {
   else if (result.type === 'hit') display.style.borderColor = '#4ade80';
   else display.style.borderColor = '#ff6b6b';
 
-  await sleep(200);
+  await sleep(150);
 }
 
 function renderResults() {
@@ -1005,6 +1080,166 @@ function switchTab(name) {
   });
   if (name === 'users') renderBatchSlots();
   if (name === 'history') { refreshHistoryFilter(); renderHistory(); }
+}
+
+// ── CSV helpers ──
+function csvDownload(filename, content) {
+  const bom = '\uFEFF'; // BOM for Excel UTF-8
+  const blob = new Blob([bom + content], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function csvMsg(id, msg, isError) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.color = isError ? 'var(--miss)' : 'var(--hit)';
+  setTimeout(() => { el.textContent = ''; }, 4000);
+}
+
+function readCsvFile(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = e => resolve(e.target.result);
+    r.onerror = reject;
+    r.readAsText(file, 'UTF-8');
+  });
+}
+
+function parseCsvRows(text) {
+  // Remove BOM, split lines, skip empty
+  return text.replace(/^\uFEFF/, '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+}
+
+// ── Prizes CSV ──
+function exportPrizeCsv() {
+  const rows = ['type,name'];
+  ['big','hit','miss'].forEach(type => {
+    state.prizes[type].forEach(name => {
+      rows.push(`${type},"${name.replace(/"/g,'""')}"`);
+    });
+  });
+  csvDownload('prizes.csv', rows.join('\n'));
+}
+
+function downloadPrizeTemplate() {
+  const tmpl = [
+    'type,name',
+    'big,本体立ち絵ステッカー',
+    'big,ポストカード',
+    'hit,デジタル手書きお手紙',
+    'miss,ハズレ①罵倒テキスト'
+  ].join('\n');
+  csvDownload('prizes_template.csv', tmpl);
+}
+
+async function importPrizeCsv(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  try {
+    const text = await readCsvFile(file);
+    const lines = parseCsvRows(text);
+    const header = lines[0].toLowerCase();
+    if (!header.includes('type') || !header.includes('name')) {
+      csvMsg('prizeCsvMsg', '❌ ヘッダーが不正です。type,name の形式にしてください', true);
+      return;
+    }
+    const newPrizes = { big: [], hit: [], miss: [] };
+    let skipped = 0;
+    for (let i = 1; i < lines.length; i++) {
+      // Simple CSV parse (handle quoted fields)
+      const cols = parseCsvLine(lines[i]);
+      if (cols.length < 2) { skipped++; continue; }
+      const type = cols[0].trim().toLowerCase();
+      const name = cols[1].trim();
+      if (!['big','hit','miss'].includes(type) || !name) { skipped++; continue; }
+      newPrizes[type].push(name);
+    }
+    state.prizes = newPrizes;
+    renderPrizes();
+    save();
+    const total = newPrizes.big.length + newPrizes.hit.length + newPrizes.miss.length;
+    csvMsg('prizeCsvMsg', `✅ ${total}件を読み込みました${skipped ? `（${skipped}行スキップ）` : ''}`, false);
+  } catch(e) {
+    csvMsg('prizeCsvMsg', '❌ 読み込みに失敗しました', true);
+  }
+}
+
+// ── Users CSV ──
+function exportUserCsv() {
+  const rows = ['name,batch,reduce'];
+  state.users.forEach(u => {
+    const reduceStr = (u.reduce || []).join('|');
+    rows.push(`"${u.name.replace(/"/g,'""')}",${u.batch},"${reduceStr}"`);
+  });
+  csvDownload('users.csv', rows.join('\n'));
+}
+
+function downloadUserTemplate() {
+  const tmpl = [
+    'name,batch,reduce',
+    'あいちゃん,3,miss::0|miss::1',
+    'ゆいちゃん,0,',
+    'さくらちゃん,1,hit::0'
+  ].join('\n');
+  csvDownload('users_template.csv', tmpl);
+}
+
+async function importUserCsv(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  try {
+    const text = await readCsvFile(file);
+    const lines = parseCsvRows(text);
+    const header = lines[0].toLowerCase();
+    if (!header.includes('name') || !header.includes('batch')) {
+      csvMsg('userCsvMsg', '❌ ヘッダーが不正です。name,batch,reduce の形式にしてください', true);
+      return;
+    }
+    const newUsers = [];
+    let skipped = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const cols = parseCsvLine(lines[i]);
+      if (cols.length < 2) { skipped++; continue; }
+      const name = cols[0].trim();
+      const batch = parseInt(cols[1]) || 0;
+      const reduceRaw = cols[2] ? cols[2].trim() : '';
+      const reduce = reduceRaw ? reduceRaw.split('|').filter(Boolean) : [];
+      if (!name) { skipped++; continue; }
+      newUsers.push({ name, batch, reduce });
+    }
+    state.users = newUsers;
+    renderUsers();
+    refreshGachaUserSelect();
+    save();
+    csvMsg('userCsvMsg', `✅ ${newUsers.length}件を読み込みました${skipped ? `（${skipped}行スキップ）` : ''}`, false);
+  } catch(e) {
+    csvMsg('userCsvMsg', '❌ 読み込みに失敗しました', true);
+  }
+}
+
+// Simple CSV line parser (handles double-quoted fields)
+function parseCsvLine(line) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (inQ) {
+      if (c === '"' && line[i+1] === '"') { cur += '"'; i++; }
+      else if (c === '"') { inQ = false; }
+      else { cur += c; }
+    } else {
+      if (c === '"') { inQ = true; }
+      else if (c === ',') { result.push(cur); cur = ''; }
+      else { cur += c; }
+    }
+  }
+  result.push(cur);
+  return result;
 }
 
 // ── Persist (localStorage) ──
