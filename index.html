@@ -699,8 +699,8 @@
 const state = {
   prizes: {
     big: ['本体立ち絵ステッカー','ポストカード','アクスタ（小）','アクスタ（中）','過去Voice1000～から選択'],
-    hit: ['デジタル手書きお手紙','過去の100～800Voiceから選択'],
-    miss: ['ハズレ①','ハズレ②','ハズレ③','ハズレ④','ハズレ⑤']
+    hit: ['デジタルお手紙','手書きお手紙','過去の100～800Voiceから選択'],
+    miss: ['ハズレ①','ハズレ②','ハズレ③','ハズレ④','ハズレ⑤','ハズレ⑥','ハズレ⑦','ハズレ⑧','ハズレ⑨','ハズレ⑩']
   },
   rates: { big: 5, hit: 25, miss: 70 },
   users: [],
@@ -1244,19 +1244,19 @@ function parseCsvLine(line) {
 
 // ── Persist (localStorage) ──
 function save() {
-  try { localStorage.setItem('gachaState', JSON.stringify({ prizes: state.prizes, users: state.users })); } catch(e){}
+  try { localStorage.setItem('gachaState_v1', JSON.stringify({ prizes: state.prizes, users: state.users })); } catch(e){}
 }
 function saveHistory() {
-  try { localStorage.setItem('gachaHistory', JSON.stringify(state.history)); } catch(e){}
+  try { localStorage.setItem('gachaHistory_v1', JSON.stringify(state.history)); } catch(e){}
 }
 function load() {
   try {
-    const d = JSON.parse(localStorage.getItem('gachaState'));
+    const d = JSON.parse(localStorage.getItem('gachaState_v1'));
     if (d?.prizes) state.prizes = d.prizes;
     if (d?.users) state.users = d.users;
   } catch(e){}
   try {
-    const h = JSON.parse(localStorage.getItem('gachaHistory'));
+    const h = JSON.parse(localStorage.getItem('gachaHistory_v1'));
     if (Array.isArray(h)) state.history = h;
   } catch(e){}
 }
