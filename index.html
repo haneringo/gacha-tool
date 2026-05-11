@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎰 ガチャツール</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Antique+Soft&family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap');
+
+  :root {
+    --gold: #f5c842;
+    --gold2: #e8a020;
+    --pink: #ff6eb4;
+    --deep: #1a0a2e;
+    --surface: #2a1245;
+    --surface2: #3a1a5e;
+    --text: #f0e6ff;
+    --muted: #a090c0;
+    --hit: #4ade80;
+    --big: #f5c842;
+    --miss: #ff6b6b;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    background: var(--deep);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Stars background ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 20%, #fff8 0%, transparent 100%),
+      radial-gradient(1px 1px at 40% 60%, #fff6 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 10%, #fff8 0%, transparent 100%),
+      radial-gradient(1px 1px at 85% 80%, #fff5 0%, transparent 100%),
+      radial-gradient(2px 2px at 25% 85%, #fff7 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 45%, #fff6 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 35%, #fff8 0%, transparent 100%),
+      radial-gradient(2px 2px at 15% 55%, #fff5 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative; z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  h1 {
+    font-family: 'Zen Antique Soft', serif;
+    text-align: center;
+    font-size: 2.2rem;
+    color: var(--gold);
+    text-shadow: 0 0 20px #f5c84280, 0 2px 4px #0008;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 24px;
+  }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    background: var(--surface);
+    padding: 4px;
+    border-radius: var(--radius);
+  }
+  .tab {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s;
+    background: transparent;
+    color: var(--muted);
+  }
+  .tab.active {
+    background: var(--surface2);
+    color: var(--gold);
+    box-shadow: 0 2px 8px #0006;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid #ffffff18;
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-weight: 900;
+    color: var(--gold);
+    font-size: 1rem;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── Form elements ── */
+  label { font-size: 0.82rem; color: var(--muted); display: block; margin-bottom: 4px; }
+  input[type=text], input[type=number], select, textarea {
+    width: 100%;
+    background: var(--deep);
+    border: 1px solid #ffffff22;
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--gold); }
+  textarea { resize: vertical; min-height: 70px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+  .form-full { margin-bottom: 12px; }
+
+  /* ── Buttons ── */
+  .btn {
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    color: #1a0a00;
+    box-shadow: 0 4px 12px #f5c84240;
+  }
+  .btn-gold:hover { transform: translateY(-1px); box-shadow: 0 6px 16px #f5c84260; }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid #ffffff22;
+    color: var(--muted);
+  }
+  .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+  .btn-danger { background: #5a1a1a; color: #ff9090; border: 1px solid #ff606040; }
+  .btn-danger:hover { background: #7a2020; }
+  .btn-pink {
+    background: linear-gradient(135deg, var(--pink), #c040a0);
+    color: #fff;
+    box-shadow: 0 4px 12px #ff6eb440;
+  }
+  .btn-pink:hover { transform: translateY(-1px); }
+  .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+
+  /* ── Badge list ── */
+  .badge-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .badge {
+    background: var(--surface2);
+    border: 1px solid #ffffff18;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .badge .remove {
+    cursor: pointer;
+    color: var(--miss);
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  /* ── User list ── */
+  .user-item {
+    background: var(--deep);
+    border: 1px solid #ffffff15;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .user-name { font-weight: 700; font-size: 1rem; flex: 1; }
+  .user-batch {
+    background: var(--gold);
+    color: #1a0a00;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 0.8rem;
+    font-weight: 900;
+  }
+  .user-reduce {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-left: 4px;
+  }
+
+  /* ── Gacha page ── */
+  .user-select-area {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    margin-bottom: 20px;
+  }
+  .user-select-area > div { flex: 1; }
+
+  .spin-controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Slot machine ── */
+  .slot-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .slot-display {
+    width: 100%;
+    max-width: 480px;
+    background: var(--deep);
+    border: 2px solid var(--gold);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 30px #f5c84220, inset 0 0 40px #0006;
+  }
+  .slot-display::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0, transparent 40px,
+      #ffffff04 40px, #ffffff04 41px
+    );
+    pointer-events: none;
+  }
+  .slot-reel {
+    font-size: 1rem;
+    color: var(--muted);
+    height: 24px;
+    overflow: hidden;
+    position: relative;
+  }
+  .slot-reel.spinning .reel-inner {
+    animation: reelSpin 0.08s linear infinite;
+  }
+  .reel-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  @keyframes reelSpin {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-24px); }
+  }
+  .slot-result-text {
+    font-size: 1.6rem;
+    font-weight: 900;
+    margin-top: 8px;
+    min-height: 40px;
+    transition: all .3s;
+  }
+  .slot-result-text.big { color: var(--big); text-shadow: 0 0 20px #f5c84280; }
+  .slot-result-text.hit { color: var(--hit); text-shadow: 0 0 20px #4ade8060; }
+  .slot-result-text.miss { color: var(--miss); }
+
+  .slot-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ── Results grid ── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .result-card {
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+    border: 1px solid transparent;
+    animation: popIn .4s cubic-bezier(.175,.885,.32,1.275) both;
+  }
+  @keyframes popIn {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .result-card.big {
+    background: linear-gradient(135deg, #3a2800, #2a1800);
+    border-color: var(--gold);
+    box-shadow: 0 0 16px #f5c84230;
+  }
+  .result-card.hit {
+    background: linear-gradient(135deg, #0a2a18, #051a10);
+    border-color: #4ade8060;
+  }
+  .result-card.miss {
+    background: linear-gradient(135deg, #2a0a0a, #1a0505);
+    border-color: #ff6b6b40;
+  }
+  .result-card .rc-rank {
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+  .big .rc-rank { color: var(--gold); }
+  .hit .rc-rank { color: var(--hit); }
+  .miss .rc-rank { color: var(--miss); }
+  .result-card .rc-item { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+  .result-card .rc-num { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+  /* ── Sparkles overlay ── */
+  .sparkle-container {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .sparkle {
+    position: absolute;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    animation: sparkleFloat 1s ease-out forwards;
+  }
+  @keyframes sparkleFloat {
+    0% { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+  }
+
+  .divider { border: none; border-top: 1px solid #ffffff12; margin: 16px 0; }
+  .section-label {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 20px;
+    font-size: 0.9rem;
+  }
+
+  .prize-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-right: 4px;
+  }
+  .prize-tag.big { background: #3a2800; color: var(--gold); border: 1px solid var(--gold); }
+  .prize-tag.hit { background: #0a2a18; color: var(--hit); border: 1px solid #4ade8060; }
+  .prize-tag.miss { background: #2a0a0a; color: var(--miss); border: 1px solid #ff6b6b40; }
+
+  .info-box {
+    background: var(--deep);
+    border: 1px solid #ffffff15;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+  .info-box strong { color: var(--text); }
+
+  .history-session {
+    background: var(--deep);
+    border: 1px solid #ffffff15;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .history-header {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: background .15s;
+  }
+  .history-header:hover { background: #ffffff08; }
+  .history-user-tag {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+  .history-meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+    flex: 1;
+  }
+  .history-summary {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .hs-tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+  .hs-tag.big { background: #3a2800; color: var(--gold); border: 1px solid var(--gold); }
+  .hs-tag.hit { background: #0a2a18; color: var(--hit); border: 1px solid #4ade8060; }
+  .hs-tag.miss { background: #2a0a0a; color: var(--miss); border: 1px solid #ff6b6b40; }
+  .history-chevron {
+    color: var(--muted);
+    font-size: 0.8rem;
+    transition: transform .2s;
+  }
+  .history-chevron.open { transform: rotate(90deg); }
+  .history-detail {
+    display: none;
+    padding: 0 16px 14px;
+    border-top: 1px solid #ffffff10;
+  }
+  .history-detail.open { display: block; }
+  .history-item-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    font-size: 0.85rem;
+    border-bottom: 1px solid #ffffff08;
+  }
+  .history-item-row:last-child { border-bottom: none; }
+  .hi-num { color: var(--muted); font-size: 0.75rem; min-width: 28px; }
+  .hi-item { flex: 1; }
+
+  @media (max-width: 600px) {
+    .form-row { grid-template-columns: 1fr; }
+    .form-row.three { grid-template-columns: 1fr; }
+    h1 { font-size: 1.6rem; }
+  }
+</style>
+</head>
+<body>
+<div class="sparkle-container" id="sparkleContainer"></div>
+
+<div class="container">
+  <h1>🎰 ガチャ抽選ツール</h1>
+  <p class="subtitle">管理者設定 → ユーザー選択 → 抽選</p>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('gacha')">🎰 抽選</button>
+    <button class="tab" onclick="switchTab('history')">📋 履歴</button>
+    <button class="tab" onclick="switchTab('prizes')">🎁 賞品設定</button>
+    <button class="tab" onclick="switchTab('users')">👤 ユーザー設定</button>
+  </div>
+
+  <!-- ════════════════════════════════ GACHA PAGE ════════════════════════════════ -->
+  <div class="page active" id="page-gacha">
+
+    <div class="card">
+      <div class="card-title">🎯 ユーザー選択</div>
+      <div class="user-select-area">
+        <div>
+          <label>ユーザーを選択</label>
+          <select id="gachaUserSelect" onchange="onUserChange()">
+            <option value="">-- 選択してください --</option>
+          </select>
+        </div>
+        <div id="userInfoBox" style="display:none; min-width:160px;">
+          <div class="info-box" id="userInfoContent"></div>
+        </div>
+      </div>
+
+      <div id="reduceInfo" style="display:none;">
+        <div class="section-label">今回の除外リスト（バッチ削減）</div>
+        <div id="reduceList" class="badge-list"></div>
+      </div>
+    </div>
+
+    <div class="spin-controls">
+      <button class="btn btn-gold" onclick="startGacha(1)" id="btn1">🎰 1回引く</button>
+      <button class="btn btn-pink" onclick="startGacha(10)" id="btn10">✨ 10連！</button>
+      <button class="btn btn-ghost" onclick="resetResults()">🔄 リセット</button>
+    </div>
+
+    <!-- Slot display -->
+    <div class="slot-wrapper">
+      <div class="slot-display" id="slotDisplay">
+        <div class="slot-label">GACHA MACHINE</div>
+        <div class="slot-reel" id="slotReel">
+          <div class="reel-inner" id="reelInner">
+            <div>？？？</div>
+          </div>
+        </div>
+        <div class="slot-result-text" id="slotResultText">ユーザーを選んで引いてください</div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="resultsArea" style="display:none;">
+      <div class="card-title" style="margin-bottom:10px;">🏆 抽選結果</div>
+      <div class="results-grid" id="resultsGrid"></div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════ HISTORY PAGE ════════════════════════════════ -->
+  <div class="page" id="page-history">
+
+    <div class="card">
+      <div class="card-title">📋 抽選履歴</div>
+      <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:16px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:160px;">
+          <label>ユーザーで絞り込み</label>
+          <select id="historyUserFilter" onchange="renderHistory()">
+            <option value="">全ユーザー</option>
+          </select>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="clearHistory()">🗑 全履歴を削除</button>
+      </div>
+      <div id="historyList"><div class="empty-state">まだ抽選履歴がありません</div></div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════ PRIZES PAGE ════════════════════════════════ -->
+  <div class="page" id="page-prizes">
+
+    <div class="card">
+      <div class="card-title">⭐ 大当たり</div>
+      <div class="form-full">
+        <label>新しい賞品を追加</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="bigPrizeInput" placeholder="例：本体立ち絵ステッカー">
+          <button class="btn btn-gold btn-sm" onclick="addPrize('big')">追加</button>
+        </div>
+      </div>
+      <div class="badge-list" id="bigPrizeList"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">✨ 当たり</div>
+      <div class="form-full">
+        <label>新しい賞品を追加</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="hitPrizeInput" placeholder="例：デジタル手書きお手紙">
+          <button class="btn btn-gold btn-sm" onclick="addPrize('hit')">追加</button>
+        </div>
+      </div>
+      <div class="badge-list" id="hitPrizeList"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💔 ハズレ</div>
+      <div class="form-full">
+        <label>新しいハズレ内容を追加</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="missPrizeInput" placeholder="例：罵倒①「このど根性ガエル！」">
+          <button class="btn btn-ghost btn-sm" onclick="addPrize('miss')">追加</button>
+        </div>
+      </div>
+      <div class="badge-list" id="missPrizeList"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚖️ 当選確率設定</div>
+      <div class="form-row three">
+        <div>
+          <label>大当たり確率 (%)</label>
+          <input type="number" id="rateB" value="5" min="0" max="100" step="1">
+        </div>
+        <div>
+          <label>当たり確率 (%)</label>
+          <input type="number" id="rateH" value="25" min="0" max="100" step="1">
+        </div>
+        <div>
+          <label>ハズレ確率 (%)</label>
+          <input type="number" id="rateM" value="70" min="0" max="100" step="1">
+        </div>
+      </div>
+      <div style="font-size:0.8rem;color:var(--muted);">※ 合計100%になるように設定してください（バッチ削減でハズレが消えた場合、残り確率で按分されます）</div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════ USERS PAGE ════════════════════════════════ -->
+  <div class="page" id="page-users">
+
+    <div class="card">
+      <div class="card-title">➕ ユーザー追加</div>
+      <div class="form-row">
+        <div>
+          <label>ユーザー名</label>
+          <input type="text" id="newUserName" placeholder="例：あいちゃん">
+        </div>
+        <div>
+          <label>前月バッチ数</label>
+          <input type="number" id="newUserBatch" value="0" min="0">
+        </div>
+      </div>
+
+      <div id="batchReduceArea">
+        <div class="section-label" id="batchReduceLabel">バッチ削減リスト（バッチ0個のため設定不要）</div>
+        <div id="batchReduceSlots"></div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <button class="btn btn-gold" onclick="addUser()">✅ ユーザーを追加</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">👥 登録ユーザー一覧</div>
+      <div id="userList"><div class="empty-state">まだユーザーがいません</div></div>
+    </div>
+
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ── State ──
+const state = {
+  prizes: {
+    big: ['本体立ち絵ステッカー','ポストカード','アクスタ（小）','アクスタ（中）','過去Voice1000～から選択'],
+    hit: ['デジタル手書きお手紙','過去の100～800Voiceから選択'],
+    miss: ['ハズレ①','ハズレ②','ハズレ③','ハズレ④','ハズレ⑤']
+  },
+  rates: { big: 5, hit: 25, miss: 70 },
+  users: [],
+  results: [],
+  history: [],
+  isSpinning: false
+};
+
+// ── Prize management ──
+function addPrize(type) {
+  const idMap = { big: 'bigPrizeInput', hit: 'hitPrizeInput', miss: 'missPrizeInput' };
+  const el = document.getElementById(idMap[type]);
+  const val = el.value.trim();
+  if (!val) return;
+  state.prizes[type].push(val);
+  el.value = '';
+  renderPrizes();
+  save();
+}
+function removePrize(type, idx) {
+  state.prizes[type].splice(idx, 1);
+  renderPrizes();
+  // Also clean user reduce references if needed
+  save();
+}
+function renderPrizes() {
+  ['big','hit','miss'].forEach(type => {
+    const el = document.getElementById(`${type}PrizeList`);
+    el.innerHTML = state.prizes[type].map((p, i) =>
+      `<div class="badge">
+        <span class="prize-tag ${type}">${type==='big'?'大当':type==='hit'?'当':'外'}</span>
+        ${p} <span class="remove" onclick="removePrize('${type}',${i})">✕</span>
+      </div>`
+    ).join('');
+  });
+}
+
+// ── User management ──
+function getBatchInput() { return parseInt(document.getElementById('newUserBatch').value)||0; }
+
+document.getElementById('newUserBatch').addEventListener('input', renderBatchSlots);
+
+function renderBatchSlots() {
+  const n = getBatchInput();
+  const label = document.getElementById('batchReduceLabel');
+  const container = document.getElementById('batchReduceSlots');
+
+  if (n === 0) {
+    label.textContent = 'バッチ削減リスト（バッチ0個のため設定不要）';
+    container.innerHTML = '';
+    return;
+  }
+
+  label.textContent = `バッチ削減リスト（バッチ${n}個分）`;
+
+  // Keep existing slots if count didn't change
+  const existing = container.querySelectorAll('.batch-slot');
+  if (existing.length > n) {
+    while (container.children.length > n) container.removeChild(container.lastChild);
+  } else {
+    for (let i = existing.length; i < n; i++) {
+      const slot = document.createElement('div');
+      slot.className = 'batch-slot';
+      slot.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
+
+      const lbl = document.createElement('span');
+      lbl.style.cssText = 'font-size:0.8rem;color:var(--muted);white-space:nowrap;min-width:60px;';
+      lbl.textContent = `バッチ${i+1}：`;
+
+      const sel = document.createElement('select');
+      sel.style.cssText = 'flex:1;';
+      sel.innerHTML = buildPrizeOptions();
+      slot.appendChild(lbl);
+      slot.appendChild(sel);
+      container.appendChild(slot);
+    }
+  }
+}
+
+function buildPrizeOptions() {
+  let opts = '<option value="">-- 削減対象を選択 --</option>';
+  state.prizes.miss.forEach((p, i) => opts += `<option value="miss::${i}">[ハズレ] ${p}</option>`);
+  state.prizes.hit.forEach((p, i) => opts += `<option value="hit::${i}">[当たり] ${p}</option>`);
+  state.prizes.big.forEach((p, i) => opts += `<option value="big::${i}">[大当たり] ${p}</option>`);
+  return opts;
+}
+
+function getReduceSelections() {
+  const slots = document.querySelectorAll('.batch-slot select');
+  return Array.from(slots).map(s => s.value).filter(v => v);
+}
+
+function addUser() {
+  const name = document.getElementById('newUserName').value.trim();
+  if (!name) { alert('ユーザー名を入力してください'); return; }
+  const batch = getBatchInput();
+  const reduce = getReduceSelections();
+
+  state.users.push({ name, batch, reduce });
+  document.getElementById('newUserName').value = '';
+  document.getElementById('newUserBatch').value = '0';
+  document.getElementById('batchReduceSlots').innerHTML = '';
+  renderBatchSlots();
+  renderUsers();
+  refreshGachaUserSelect();
+  save();
+}
+
+function removeUser(idx) {
+  if (!confirm(`${state.users[idx].name} を削除しますか？`)) return;
+  state.users.splice(idx, 1);
+  renderUsers();
+  refreshGachaUserSelect();
+  save();
+}
+
+function renderUsers() {
+  const el = document.getElementById('userList');
+  if (state.users.length === 0) {
+    el.innerHTML = '<div class="empty-state">まだユーザーがいません</div>';
+    return;
+  }
+  el.innerHTML = state.users.map((u, i) => {
+    const reduceLabels = u.reduce.map(r => {
+      const [type, idx] = r.split('::');
+      const prize = state.prizes[type]?.[parseInt(idx)];
+      return prize ? prize : r;
+    });
+    return `<div class="user-item">
+      <span class="user-name">👤 ${u.name}</span>
+      <span class="user-batch">バッチ ${u.batch}個</span>
+      ${reduceLabels.length ? `<span class="user-reduce">除外: ${reduceLabels.join('、')}</span>` : ''}
+      <button class="btn btn-danger btn-sm" onclick="removeUser(${i})">削除</button>
+    </div>`;
+  }).join('');
+}
+
+function refreshGachaUserSelect() {
+  const sel = document.getElementById('gachaUserSelect');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">-- 選択してください --</option>' +
+    state.users.map((u, i) => `<option value="${i}">${u.name}（バッチ${u.batch}個）</option>`).join('');
+  if (current) sel.value = current;
+  onUserChange();
+}
+
+function onUserChange() {
+  const sel = document.getElementById('gachaUserSelect');
+  const idx = parseInt(sel.value);
+  const infoBox = document.getElementById('userInfoBox');
+  const reduceInfoEl = document.getElementById('reduceInfo');
+
+  if (isNaN(idx) || !state.users[idx]) {
+    infoBox.style.display = 'none';
+    reduceInfoEl.style.display = 'none';
+    return;
+  }
+  const u = state.users[idx];
+  infoBox.style.display = 'block';
+  document.getElementById('userInfoContent').innerHTML =
+    `<strong>${u.name}</strong>さん<br>前月バッチ: <strong style="color:var(--gold)">${u.batch}個</strong>`;
+
+  const labels = u.reduce.map(r => {
+    const [type, idx2] = r.split('::');
+    return state.prizes[type]?.[parseInt(idx2)] || r;
+  });
+  if (labels.length) {
+    reduceInfoEl.style.display = 'block';
+    document.getElementById('reduceList').innerHTML =
+      labels.map(l => `<div class="badge" style="border-color:var(--miss)">${l}</div>`).join('');
+  } else {
+    reduceInfoEl.style.display = 'none';
+  }
+}
+
+// ── Gacha logic ──
+function getAvailablePrizes(userIdx) {
+  const u = state.users[userIdx];
+  const exclude = new Set(u.reduce);
+  return {
+    big: state.prizes.big.filter((_, i) => !exclude.has(`big::${i}`)),
+    hit: state.prizes.hit.filter((_, i) => !exclude.has(`hit::${i}`)),
+    miss: state.prizes.miss.filter((_, i) => !exclude.has(`miss::${i}`))
+  };
+}
+
+function drawOne(prizes) {
+  const rB = parseFloat(document.getElementById('rateB').value)||5;
+  const rH = parseFloat(document.getElementById('rateH').value)||25;
+  const rM = parseFloat(document.getElementById('rateM').value)||70;
+
+  // Adjust if some categories empty
+  let wb = prizes.big.length > 0 ? rB : 0;
+  let wh = prizes.hit.length > 0 ? rH : 0;
+  let wm = prizes.miss.length > 0 ? rM : 0;
+  const total = wb + wh + wm;
+  if (total === 0) return { type: 'miss', item: 'リストが空です' };
+
+  const r = Math.random() * total;
+  let type, pool;
+  if (r < wb) { type = 'big'; pool = prizes.big; }
+  else if (r < wb + wh) { type = 'hit'; pool = prizes.hit; }
+  else { type = 'miss'; pool = prizes.miss; }
+
+  const item = pool[Math.floor(Math.random() * pool.length)];
+  return { type, item };
+}
+
+const reelItems = ['🌟','💫','✨','🎁','💌','🎀','🔮','🌈','💎','🎊'];
+
+async function startGacha(count) {
+  const sel = document.getElementById('gachaUserSelect');
+  const idx = parseInt(sel.value);
+  if (isNaN(idx) || !state.users[idx]) { alert('ユーザーを選択してください'); return; }
+  if (state.isSpinning) return;
+
+  state.isSpinning = true;
+  document.getElementById('btn1').disabled = true;
+  document.getElementById('btn10').disabled = true;
+
+  const prizes = getAvailablePrizes(idx);
+  state.results = [];
+  document.getElementById('resultsArea').style.display = 'none';
+  document.getElementById('resultsGrid').innerHTML = '';
+
+  const delay = count === 1 ? 2000 : 800;
+
+  for (let i = 0; i < count; i++) {
+    const result = drawOne(prizes);
+    state.results.push(result);
+    await animateSpin(result, i, delay);
+    await sleep(count === 1 ? 300 : 100);
+  }
+
+  // Show all results
+  renderResults();
+  saveSession(idx, state.results);
+
+  state.isSpinning = false;
+  document.getElementById('btn1').disabled = false;
+  document.getElementById('btn10').disabled = false;
+
+  if (state.results.some(r => r.type === 'big')) spawnSparkles('#f5c842');
+  else if (state.results.some(r => r.type === 'hit')) spawnSparkles('#4ade80');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function animateSpin(result, idx, spinDuration) {
+  const reel = document.getElementById('slotReel');
+  const inner = document.getElementById('reelInner');
+  const resultText = document.getElementById('slotResultText');
+  const display = document.getElementById('slotDisplay');
+
+  resultText.textContent = '';
+  resultText.className = 'slot-result-text';
+  display.style.borderColor = 'var(--gold)';
+  reel.classList.add('spinning');
+
+  // Spin animation: cycle through random items
+  const spinTime = spinDuration - 200;
+  const interval = setInterval(() => {
+    inner.innerHTML = reelItems.map(i => `<div>${i}</div>`).join('');
+  }, 80);
+
+  await sleep(spinTime);
+  clearInterval(interval);
+  reel.classList.remove('spinning');
+
+  // Show result
+  const emoji = result.type === 'big' ? '🏆' : result.type === 'hit' ? '✨' : '💔';
+  inner.innerHTML = `<div>${emoji}</div>`;
+  resultText.textContent = result.item;
+  resultText.className = `slot-result-text ${result.type}`;
+
+  if (result.type === 'big') display.style.borderColor = 'var(--gold)';
+  else if (result.type === 'hit') display.style.borderColor = '#4ade80';
+  else display.style.borderColor = '#ff6b6b';
+
+  await sleep(200);
+}
+
+function renderResults() {
+  const area = document.getElementById('resultsArea');
+  const grid = document.getElementById('resultsGrid');
+  area.style.display = 'block';
+
+  grid.innerHTML = state.results.map((r, i) => {
+    const label = r.type === 'big' ? '⭐ 大当たり！' : r.type === 'hit' ? '✨ 当たり' : '💔 ハズレ';
+    return `<div class="result-card ${r.type}" style="animation-delay:${i*0.06}s">
+      <div class="rc-rank">${label}</div>
+      <div class="rc-item">${r.item}</div>
+      <div class="rc-num">${i+1}回目</div>
+    </div>`;
+  }).join('');
+}
+
+function resetResults() {
+  state.results = [];
+  document.getElementById('resultsArea').style.display = 'none';
+  document.getElementById('resultsGrid').innerHTML = '';
+  document.getElementById('slotResultText').textContent = 'ユーザーを選んで引いてください';
+  document.getElementById('slotResultText').className = 'slot-result-text';
+  document.getElementById('slotDisplay').style.borderColor = 'var(--gold)';
+  document.getElementById('reelInner').innerHTML = '<div>？？？</div>';
+}
+
+// ── Sparkles ──
+function spawnSparkles(color) {
+  const container = document.getElementById('sparkleContainer');
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2;
+  for (let i = 0; i < 30; i++) {
+    const el = document.createElement('div');
+    el.className = 'sparkle';
+    const angle = (Math.random() * 360) * Math.PI / 180;
+    const dist = 80 + Math.random() * 200;
+    el.style.cssText = `
+      left: ${cx}px; top: ${cy}px;
+      background: ${color};
+      --dx: ${Math.cos(angle)*dist}px;
+      --dy: ${Math.sin(angle)*dist}px;
+      animation-delay: ${Math.random()*0.3}s;
+    `;
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 1300);
+  }
+}
+
+// ── Tab switching ──
+function switchTab(name) {
+  const tabNames = ['gacha','history','prizes','users'];
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', tabNames[i] === name);
+  });
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.toggle('active', p.id === `page-${name}`);
+  });
+  if (name === 'users') renderBatchSlots();
+  if (name === 'history') { refreshHistoryFilter(); renderHistory(); }
+}
+
+// ── Persist (localStorage) ──
+function save() {
+  try { localStorage.setItem('gachaState', JSON.stringify({ prizes: state.prizes, users: state.users })); } catch(e){}
+}
+function saveHistory() {
+  try { localStorage.setItem('gachaHistory', JSON.stringify(state.history)); } catch(e){}
+}
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem('gachaState'));
+    if (d?.prizes) state.prizes = d.prizes;
+    if (d?.users) state.users = d.users;
+  } catch(e){}
+  try {
+    const h = JSON.parse(localStorage.getItem('gachaHistory'));
+    if (Array.isArray(h)) state.history = h;
+  } catch(e){}
+}
+
+// ── History ──
+function saveSession(userIdx, results) {
+  const u = state.users[userIdx];
+  const now = new Date();
+  const session = {
+    id: Date.now(),
+    userName: u.name,
+    datetime: now.toISOString(),
+    results: results.map(r => ({ type: r.type, item: r.item }))
+  };
+  state.history.unshift(session);
+  saveHistory();
+}
+
+function refreshHistoryFilter() {
+  const sel = document.getElementById('historyUserFilter');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">全ユーザー</option>' +
+    state.users.map(u => `<option value="${u.name}">${u.name}</option>`).join('');
+  sel.value = current;
+}
+
+function renderHistory() {
+  const filter = document.getElementById('historyUserFilter')?.value || '';
+  const el = document.getElementById('historyList');
+  const sessions = filter ? state.history.filter(s => s.userName === filter) : state.history;
+
+  if (sessions.length === 0) {
+    el.innerHTML = '<div class="empty-state">まだ抽選履歴がありません</div>';
+    return;
+  }
+
+  el.innerHTML = sessions.map((s, si) => {
+    const dt = new Date(s.datetime);
+    const dateStr = `${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+    const bigCount = s.results.filter(r => r.type === 'big').length;
+    const hitCount = s.results.filter(r => r.type === 'hit').length;
+    const missCount = s.results.filter(r => r.type === 'miss').length;
+    const total = s.results.length;
+
+    const summaryTags = [
+      bigCount ? `<span class="hs-tag big">⭐ 大当たり×${bigCount}</span>` : '',
+      hitCount ? `<span class="hs-tag hit">✨ 当たり×${hitCount}</span>` : '',
+      missCount ? `<span class="hs-tag miss">💔 ハズレ×${missCount}</span>` : ''
+    ].filter(Boolean).join('');
+
+    const rows = s.results.map((r, i) => {
+      const label = r.type === 'big' ? '⭐ 大当たり' : r.type === 'hit' ? '✨ 当たり' : '💔 ハズレ';
+      return `<div class="history-item-row">
+        <span class="hi-num">${i+1}回目</span>
+        <span class="prize-tag ${r.type}">${label}</span>
+        <span class="hi-item">${r.item}</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="history-session">
+      <div class="history-header" onclick="toggleSession(${s.id})">
+        <span class="history-user-tag">👤 ${s.userName}</span>
+        <span class="history-meta">${dateStr}　${total}回引き</span>
+        <div class="history-summary">${summaryTags}</div>
+        <span class="history-chevron" id="chev-${s.id}">▶</span>
+      </div>
+      <div class="history-detail" id="detail-${s.id}">
+        ${rows}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSession(id) {
+  const detail = document.getElementById(`detail-${id}`);
+  const chev = document.getElementById(`chev-${id}`);
+  const isOpen = detail.classList.contains('open');
+  detail.classList.toggle('open', !isOpen);
+  chev.classList.toggle('open', !isOpen);
+}
+
+function clearHistory() {
+  if (!confirm('全履歴を削除しますか？')) return;
+  state.history = [];
+  saveHistory();
+  renderHistory();
+}
+
+// ── Init ──
+load();
+renderPrizes();
+renderUsers();
+refreshGachaUserSelect();
+</script>
+</body>
+</html>
