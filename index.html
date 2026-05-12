@@ -892,10 +892,21 @@ function drawOne(prizes) {
   const rH = parseFloat(document.getElementById('rateH').value)||25;
   const rM = parseFloat(document.getElementById('rateM').value)||70;
 
-  // Adjust if some categories empty
-  let wb = prizes.big.length > 0 ? rB : 0;
-  let wh = prizes.hit.length > 0 ? rH : 0;
-  let wm = prizes.miss.length > 0 ? rM : 0;
+  // 案①：1賞品あたりの単価で重みを計算
+  // 全リスト（除外前）の個数を基準に単価を算出
+  const totalB = state.prizes.big.length || 1;
+  const totalH = state.prizes.hit.length || 1;
+  const totalM = state.prizes.miss.length || 1;
+
+  const unitB = rB / totalB; // 大当たり1個あたりの確率
+  const unitH = rH / totalH; // 当たり1個あたりの確率
+  const unitM = rM / totalM; // ハズレ1個あたりの確率
+
+  // 除外後の残り個数 × 単価 = 実効確率
+  const wb = prizes.big.length * unitB;
+  const wh = prizes.hit.length * unitH;
+  const wm = prizes.miss.length * unitM;
+
   const total = wb + wh + wm;
   if (total === 0) return { type: 'miss', item: 'リストが空です' };
 
