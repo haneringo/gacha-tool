@@ -1255,19 +1255,19 @@ function parseCsvLine(line) {
 
 // ── Persist (localStorage) ──
 function save() {
-  try { localStorage.setItem('gachaState_v1', JSON.stringify({ prizes: state.prizes, users: state.users })); } catch(e){}
+  try { localStorage.setItem('gachaState_v2', JSON.stringify({ prizes: state.prizes, users: state.users })); } catch(e){}
 }
 function saveHistory() {
-  try { localStorage.setItem('gachaHistory_v1', JSON.stringify(state.history)); } catch(e){}
+  try { localStorage.setItem('gachaHistory_v2', JSON.stringify(state.history)); } catch(e){}
 }
 function load() {
   try {
-    const d = JSON.parse(localStorage.getItem('gachaState_v1'));
+    const d = JSON.parse(localStorage.getItem('gachaState_v2'));
     if (d?.prizes) state.prizes = d.prizes;
     if (d?.users) state.users = d.users;
   } catch(e){}
   try {
-    const h = JSON.parse(localStorage.getItem('gachaHistory_v1'));
+    const h = JSON.parse(localStorage.getItem('gachaHistory_v2'));
     if (Array.isArray(h)) state.history = h;
   } catch(e){}
 }
